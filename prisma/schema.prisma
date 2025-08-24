@@ -1,0 +1,162 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String   @id @default(cuid())
+  username           String   @unique
+  displayName        String
+  photoUrl           String?
+  isPremium          Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  reviews            Review[]
+  lists              List[]
+  likes              Like[]
+  campaignEntries CampaignEntry[] // ← 追加！
+  stats              UserStats?
+}
+
+model Review {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  type         ReviewType
+  storeId      String?
+  store        Store?   @relation(fields: [storeId], references: [id])
+  productId    String?
+  product      Product? @relation(fields: [productId], references: [id])
+  rating       Int
+  comment      String?
+  photos       String[] @db.Text
+  visitedAt    DateTime
+  price        Int?
+  tags         String[] @db.Text
+  labels       String[] @db.Text
+  isPublic     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  likes        Like[]
+  listItems    ListItem[]
+}
+
+enum ReviewType {
+  STORE
+  PRODUCT
+}
+
+model Store {
+  id       String   @id @default(cuid())
+  name     String
+  placeId  String   @unique
+  lat      Float
+  lng      Float
+  address  String
+  region   String?
+  station  String?
+  reviews  Review[]
+}
+
+model Product {
+  id        String   @id @default(cuid())
+  janCode   String   @unique
+  name      String
+  maker     String?
+  category  String?
+  reviews   Review[]
+}
+
+model List {
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  name        String
+  description String?
+  meta        Json?
+  isPublic    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  items       ListItem[]
+}
+
+model ListItem {
+  id       String  @id @default(cuid())
+  listId   String
+  reviewId String
+  list     List    @relation(fields: [listId], references: [id])
+  review   Review  @relation(fields: [reviewId], references: [id])
+}
+
+model Like {
+  id          String   @id @default(cuid())
+  reviewId    String
+  userId      String
+  isOfficial  Boolean  @default(false)
+  review      Review   @relation(fields: [reviewId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model Campaign {
+  id          String    @id @default(cuid())
+  ownerOrgId  String?
+  org         Org?      @relation(fields: [ownerOrgId], references: [id])
+  title       String
+  description String?
+  capacity    Int
+  mode        CampaignMode
+  startsAt    DateTime
+  endsAt      DateTime
+  isPublic    Boolean   @default(true)
+  entries     CampaignEntry[]
+  createdAt   DateTime  @default(now())
+}
+
+enum CampaignMode {
+  APPLY
+  INVITE
+}
+
+model CampaignEntry {
+  id         String           @id @default(cuid())
+  campaignId String
+  userId     String
+  status     CampaignStatus   @default(APPLIED)
+  createdAt  DateTime         @default(now())
+  campaign   Campaign         @relation(fields: [campaignId], references: [id])
+  user       User             @relation(fields: [userId], references: [id])
+}
+
+enum CampaignStatus {
+  APPLIED
+  INVITED
+  ACCEPTED
+  REJECTED
+  WIN
+}
+
+model Org {
+  id     String  @id @default(cuid())
+  name   String
+  type   OrgType
+  ownedCampaigns Campaign[]
+}
+
+enum OrgType {
+  BRAND
+  RESTAURANT
+  CHAIN
+}
+
+model UserStats {
+  userId            String  @id
+  user              User    @relation(fields: [userId], references: [id])
+  reviewCount       Int     @default(0)
+  likeCount         Int     @default(0)
+  officialLikeCount Int     @default(0)
+  richRatio         Float   @default(0)
+  varianceScore     Float   @default(0)
+  trustLevel        Int     @default(1)
+}

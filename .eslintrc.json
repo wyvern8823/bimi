@@ -1,0 +1,7 @@
+{
+  "extends": ["next/core-web-vitals"],
+  "parserOptions": { "ecmaVersion": 2023 },
+  "rules": {
+    "@next/next/no-img-element": "off"
+  }
+}
